@@ -100,14 +100,8 @@ Token munch_token(const char* first, const char* last) {
         }
         // C-style comments
         if (strcmp(first, "/*") == 0) {
-            const char* it = first + 2;
-            while (it + 1 < last) {
-                if ((strcmp(it, "*") == 0) && (strcmp(it + 1, "/") == 0)) {
-                    break;
-                }
-                ++it;
-            }
-            return Token{TokenType::Error, first, last}; // Unterminated comment
+            // not skipped by skip_whitespace_and_comments so unterminate c-style comment is an error
+            return Token{TokenType::Error, first, last};
         }
     }
     switch(*first) {
