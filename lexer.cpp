@@ -1,11 +1,13 @@
 #include <cstring>
 #include <cctype>
+#include <optional>
+#include <utility> 
 
 #include "lexer.hpp"
 
 
 static bool substr_eq(const char* first, const char* last, const char* pattern);
-static const char* skip_whitespace_and_comments(const char* first, const char* last);
+static std::pair<const char*, std::optional<Token>> skip_whitespace_and_comments(const char* first, const char* last);
 static const char* identifier_end(const char* first, const char* last);
 static const char* numeric_end(const char* first, const char* last);
 static const char* error_end(const char* first, const char* last);
@@ -26,8 +28,21 @@ std::vector<Token> lex(const char* first, const char* last) {
         // munch_token function so that we don't have to deal with the special
         // case of a string containing only whitespace.
         // There are pros and cons of doing it this way.
-        curr = skip_whitespace_and_comments(curr, last);
-        if(curr == last) {
+        auto [next_char, opt_error_token] = skip_whitespace_and_comments(curr, last);
+        // curr = skip_whitespace_and_comments(curr, last);
+        // if(curr == last) {
+        //     break;
+        // }
+        curr = next_char;
+        // 2. Check if the skipper returned an error token.
+        if (opt_error_token) {
+            // If it did, add it to our list of tokens.
+            tokens.push_back(*opt_error_token);
+            // An unclosed comment error consumes the rest of the file, so we must stop.
+            break;
+        }
+        // 3. If we're at the end of the file after skipping, we're done.
+        if (curr == last) {
             break;
         }
         Token tok = munch_token(curr, last);
@@ -101,7 +116,7 @@ Token munch_token(const char* first, const char* last) {
         }
         // C-style comments
         if (strcmp(first, "/*") == 0) {
-            // not skipped by skip_whitespace_and_comments so unterminate c-style comment is an error
+            // not skipped by skip_whitespace_and_comments so unterminated c-style comment is an error
             return Token{TokenType::Error, first, last};
         }
     }
@@ -183,7 +198,7 @@ const char* numeric_end(const char* first, const char* last) {
 /** *
  * Skip whitespace and comments
  */
-const char* skip_whitespace_and_comments(const char* first, const char* last) {
+std::pair<const char*, std::optional<Token>> skip_whitespace_and_comments(const char* first, const char* last) {
     const char* it = first;
     while (true) {
         const char* start_loop = it;
@@ -200,6 +215,7 @@ const char* skip_whitespace_and_comments(const char* first, const char* last) {
             continue; // Continue to skip more whitespace/comments
         } else if (it + 1 < last && *it == '/' && *(it + 1) == '*') {
             // Multi-line comment
+            const char* start_comment = it;
             it += 2;
             while (it + 1 < last && !(*it == '*' && *(it + 1) == '/')) {
                 ++it;
@@ -207,8 +223,8 @@ const char* skip_whitespace_and_comments(const char* first, const char* last) {
             if (it + 1 < last) {
                 it += 2; // found the closing */
             } else {
-                it = start_loop; // Unterminated comment, return to start of comment for error token
-                break;
+                Token err_tok = Token{TokenType::Error, start_comment, last}; // Unterminated comment
+                return {last, err_tok};
             }
             continue; // Continue to skip more whitespace/comments
         } else {
@@ -219,7 +235,7 @@ const char* skip_whitespace_and_comments(const char* first, const char* last) {
             break; // No progress made, exit loop
         }
     }
-    return it;
+    return {it, std::nullopt};
 }
 
 /**
