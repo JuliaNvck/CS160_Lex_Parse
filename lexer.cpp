@@ -24,24 +24,16 @@ std::vector<Token> lex(const char* first, const char* last) {
 
     const char* curr = first;
     while(curr != last) {
-        // in this implementation, we strip the whitespace outside of the
-        // munch_token function so that we don't have to deal with the special
-        // case of a string containing only whitespace.
-        // There are pros and cons of doing it this way.
         auto [next_char, opt_error_token] = skip_whitespace_and_comments(curr, last);
-        // curr = skip_whitespace_and_comments(curr, last);
-        // if(curr == last) {
-        //     break;
-        // }
         curr = next_char;
-        // 2. Check if the skipper returned an error token.
+        // Check if the skipper returned an error token.
         if (opt_error_token) {
             // If it did, add it to our list of tokens.
             tokens.push_back(*opt_error_token);
-            // An unclosed comment error consumes the rest of the file, so we must stop.
+            // An unclosed comment error consumes the rest of the file, so we stop.
             break;
         }
-        // 3. If we're at the end of the file after skipping, we're done.
+        // If we're at the end of the file after skipping, we're done.
         if (curr == last) {
             break;
         }
