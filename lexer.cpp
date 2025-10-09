@@ -5,8 +5,9 @@
 
 
 static bool substr_eq(const char* first, const char* last, const char* pattern);
-static const char* alphanumeric_end(const char* first, const char* last);
-static const char* whitespace_end(const char* first, const char* last);
+static const char* skip_whitespace_and_comments(const char* first, const char* last);
+static const char* identifier_end(const char* first, const char* last);
+static const char* numeric_end(const char* first, const char* last);
 static const char* error_end(const char* first, const char* last);
 
 
@@ -173,18 +174,6 @@ const char* numeric_end(const char* first, const char* last) {
     }
     for(const char* it = first; it != last; ++it) {
         if(!(isdigit(*it))) {
-            return it;
-        }
-    }
-    return last;
-}
-
-/**
- * Return one-past-the-end of whitespace characters
- */
-const char* whitespace_end(const char* first, const char* last) {
-    for(const char* it = first; it != last; ++it) {
-        if(' ' != *it) {
             return it;
         }
     }

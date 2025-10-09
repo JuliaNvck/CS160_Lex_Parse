@@ -4,42 +4,6 @@
 #include <vector>
 #include "lexer.hpp"
 
-
-int main(int argc, char** argv) {
-    if(argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <input-file>" << std::endl;
-        return 1;
-    }
-
-    std::ifstream input_file(argv[1]);
-    if(!input_file) {
-        std::cerr << "Could not open file: " << argv[1] << std::endl;
-        return 1;
-    }
-
-    // Read the entire file into a string
-    std::stringstream buffer;
-    buffer << input_file.rdbuf();
-    std::string source_code = buffer.str();
-
-    // Lex the source code
-    const char* first = source_code.c_str();
-    const char* last = first + source_code.length();
-
-    std::vector<Token> tokens = lex(first, last);
-
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        const Token& token = tokens[i];
-        std::cout << token_type_to_string(token);
-        if (i != tokens.size() - 1) {
-            std::cout << " ";
-        }
-    }
-    std::cout << std::endl;
-
-    return 0;
-}
-
 // Helper function to get string representation of a TokenType
 std::string token_type_to_string(const Token& token) {
     std::string lexeme(token.first, token.last - token.first);
@@ -92,4 +56,40 @@ std::string token_type_to_string(const Token& token) {
         case TokenType::CloseBrace:   return "CloseBrace";
         case TokenType::QuestionMark: return "QuestionMark";
     }
+}
+
+
+int main(int argc, char** argv) {
+    if(argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <input-file>" << std::endl;
+        return 1;
+    }
+
+    std::ifstream input_file(argv[1]);
+    if(!input_file) {
+        std::cerr << "Could not open file: " << argv[1] << std::endl;
+        return 1;
+    }
+
+    // Read the entire file into a string
+    std::stringstream buffer;
+    buffer << input_file.rdbuf();
+    std::string source_code = buffer.str();
+
+    // Lex the source code
+    const char* first = source_code.c_str();
+    const char* last = first + source_code.length();
+
+    std::vector<Token> tokens = lex(first, last);
+
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        const Token& token = tokens[i];
+        std::cout << token_type_to_string(token);
+        if (i != tokens.size() - 1) {
+            std::cout << " ";
+        }
+    }
+    std::cout << std::endl;
+
+    return 0;
 }
