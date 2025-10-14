@@ -1,4 +1,3 @@
-// ast.hpp
 #pragma once
 
 #include <iostream>
