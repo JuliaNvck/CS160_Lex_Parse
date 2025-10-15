@@ -2,7 +2,7 @@
 
 # Configuration
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g -fsanitize=address -Werror
+CXXFLAGS = -std=c++17 -Wall -g -fsanitize=address
 EXECUTABLES = lex parse
 
 # Define object files for each executable

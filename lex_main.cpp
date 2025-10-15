@@ -63,6 +63,7 @@ std::string token_type_to_string(const Token& token) {
         case TokenType::CloseBrace:   return "CloseBrace";
         case TokenType::QuestionMark: return "QuestionMark";
     }
+    return "Unknown";
 }
 
 
