@@ -12,6 +12,40 @@ static const char* identifier_end(const char* first, const char* last);
 static const char* numeric_end(const char* first, const char* last);
 static const char* error_end(const char* first, const char* last);
 
+// helpers
+static bool starts_two_char_token(const char* p, const char* last) {
+    if (p + 1 >= last) return false;
+    return (p[0] == '!' && p[1] == '=') ||
+           (p[0] == '<' && p[1] == '=') ||
+           (p[0] == '>' && p[1] == '=') ||
+           (p[0] == '-' && p[1] == '>') ||
+           (p[0] == '=' && p[1] == '=') ||
+           // comment starters (so we stop before the skipper handles them)
+           (p[0] == '/' && (p[1] == '/' || p[1] == '*'));
+}
+
+static bool starts_one_char_token(char c) {
+    switch (c) {
+        case ':': case ';': case ',': case '&': case '+': case '-':
+        case '*': case '/': case '<': case '>': case '.': case '=':
+        case '(': case ')': case '[': case ']': case '{': case '}':
+        case '?':
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool starts_token(const char* p, const char* last) {
+    if (p >= last) return false;
+    if (std::isalpha(static_cast<unsigned char>(*p))) return true; // Id/keyword
+    if (std::isdigit(static_cast<unsigned char>(*p))) return true; // Num
+    if (starts_two_char_token(p, last)) return true;
+    if (starts_one_char_token(*p)) return true;
+    return false;
+}
+
+
 
 /**
  * The entry point of our lexer
@@ -144,17 +178,31 @@ Token munch_token(const char* first, const char* last) {
  * Look for the next character which is either a space or the beginning of the
  * next (possibly) valid token.
  */
-const char* error_end(const char* first, const char* last) {
-    // find the end of the error
-    const char* err_end = first + 1;
-    for(; err_end != last; ++err_end) {
-        // find next space or possible start of token
-        if(' ' == *err_end || isalpha(*err_end) || '=' == *err_end || '+' == *err_end || ';' == *err_end) {
-            break;
-        }
+// const char* error_end(const char* first, const char* last) {
+//     // find the end of the error
+//     const char* err_end = first + 1;
+//     for(; err_end != last; ++err_end) {
+//         // find next space or possible start of token
+//         if(' ' == *err_end || isalpha(*err_end) || '=' == *err_end || '+' == *err_end || ';' == *err_end) {
+//             break;
+//         }
+//     }
+//     return err_end;
+// }
+// Consume a maximal run of non-token-start characters, INCLUDING whitespace,
+// stopping right before the next valid token (or end of input).
+static const char* error_end(const char* first, const char* last) {
+    const char* it = first;
+    // Always consume at least one char
+    if (it < last) ++it;
+
+    while (it < last) {
+        if (starts_token(it, last)) break;   // stop BEFORE next token
+        ++it;                                 // keep absorbing (incl. spaces/newlines)
     }
-    return err_end;
+    return it; // one-past-end of Error(...) lexeme
 }
+
 
 
 /**
