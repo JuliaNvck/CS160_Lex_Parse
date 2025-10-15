@@ -1,0 +1,20 @@
+# Ignore build artifacts
+lex
+parse
+*.o
+*.out
+*.exe
+*.a
+*.so
+
+# Ignore temporary or system files
+*.swp
+*.log
+*.DS_Store
+
+# Ignore build and output directories
+/build/
+/bin/
+/dist/
+/Debug/
+/Release/
