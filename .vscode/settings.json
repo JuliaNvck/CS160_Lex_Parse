@@ -51,5 +51,7 @@
         "unordered_map": "cpp",
         "variant": "cpp",
         "algorithm": "cpp"
-    }
+    },
+    // Ensure VS Code IntelliSense parses with C++17 features
+    "C_Cpp.default.cppStandard": "c++17"
 }
