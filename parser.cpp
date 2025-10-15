@@ -11,6 +11,12 @@ std::unique_ptr<Program> Parser::parse() {
 // program ::= (struct | extern | function)+
 std::unique_ptr<Program> Parser::parse_program() {
     auto program = std::make_unique<Program>();
+    
+    // Grammar requires at least one (struct | extern | function)
+    if (is_at_end()) {
+        error("unexpected end of token stream");
+    }
+    
     while (!is_at_end()) {
         if (check("Struct")) {
             program->structs.push_back(parse_struct_def());
@@ -178,17 +184,29 @@ std::unique_ptr<Stmt> Parser::parse_return_stmt() {
 //        | `(` exp `)`
 
 // exp  ::= exp1 (`?` exp `:` exp1)⋆
-std::unique_ptr<Exp> Parser::parse_exp() {
-    auto left = parse_exp1(); // Parse higher-precedence expression
+// std::unique_ptr<Exp> Parser::parse_exp() {
+//     auto left = parse_exp1(); // Parse higher-precedence expression
 
-    while (check("QuestionMark")) { // TODO no check parens??
+//     while (check("QuestionMark")) { // TODO no check parens??
+//         advance(); // consume '?'
+//         auto true_exp = parse_exp();
+//         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
+//         auto false_exp = parse_exp1();
+//         left = std::make_unique<Select>(std::move(left), std::move(true_exp), std::move(false_exp));
+//     }
+//     return left;
+// }
+std::unique_ptr<Exp> Parser::parse_exp() {
+    auto condition = parse_exp1(); // Parse the condition
+    if (check("QuestionMark")) {
         advance(); // consume '?'
-        auto true_exp = parse_exp();
+        auto true_exp = parse_exp(); // Recursively parse the true-branch expression
         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
-        auto false_exp = parse_exp1();
-        left = std::make_unique<Select>(std::move(left), std::move(true_exp), std::move(false_exp));
+        auto false_exp = parse_exp(); // Recursively parse the false-branch expression
+        // Note: The false branch should also be parse_exp() to handle nesting
+        return std::make_unique<Select>(std::move(condition), std::move(true_exp), std::move(false_exp));
     }
-    return left;
+    return condition;
 }
 
 // exp1 ::= exp2 ([`and`,`or`] exp2)⋆
@@ -277,46 +295,89 @@ std::unique_ptr<Exp> Parser::parse_exp5() {
 // call_or_access ::= `[` exp `]`
                 //  | `.` (id | `*`)
                 //  | `(` LIST(exp) `)`
+// std::unique_ptr<Exp> Parser::parse_exp6() {
+//     auto left = parse_exp7();
+//     while (check_any({"OpenParen", "OpenBracket", "Dot"})) {
+//         if (check("OpenBracket")) {
+//             consume("OpenBracket", "unexpected token at token " + std::to_string(peek().index));
+//             auto index_exp = parse_exp();
+//             consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
+//             auto place = std::make_unique<ArrayAccess>(std::move(left), std::move(index_exp));
+//             left = std::make_unique<Val>(std::move(place));
+//         } else if (check("Dot")) {
+//             consume("Dot", "unexpected token at token " + std::to_string(peek().index));
+//             if (check("Id")) {
+//                 Token id_token = advance();
+//                 auto place = std::make_unique<FieldAccess>(std::move(left), id_token.value);
+//                 left = std::make_unique<Val>(std::move(place));
+//             } else if (check("Star")) {
+//                 advance();
+//                 auto place = std::make_unique<Deref>(std::move(left));
+//                 left = std::make_unique<Val>(std::move(place));
+//             } else {
+//                 error("unexpected token at token " + std::to_string(peek().index));
+//             }
+//         } else if (check("OpenParen")) {
+//             consume("OpenParen", "unexpected token at token " + std::to_string(peek().index));
+//             // Parse LIST(exp) for function call arguments
+//             auto args = std::vector<std::unique_ptr<Exp>>();
+//             if (!check("CloseParen")) { // skip list if no params
+//                 do {
+//                     args.push_back(parse_exp());
+//                 } while (check("Comma") && (advance(), true)); // Consume comma and continue
+//             }
+//             consume("CloseParen", "unexpected token at token " + std::to_string(peek().index));
+//             auto fc = std::make_unique<FunCall>(std::move(left), std::move(args));
+//             left = std::make_unique<CallExp>(std::move(fc));
+//         }
+//         else {
+//             error("unexpected token at token " + std::to_string(peek().index));
+//         }
+//     }
+//     return left;
+// }
 std::unique_ptr<Exp> Parser::parse_exp6() {
-    auto left = parse_exp7();
-    while (check_any({"OpenParen", "OpenBracket", "Dot"})) {
+    auto exp = parse_exp7(); // Start with a primary expression.
+
+    while (true) {
         if (check("OpenBracket")) {
-            consume("OpenBracket", "unexpected token at token " + std::to_string(peek().index));
-            auto index_exp = parse_exp();
+            advance();
+            auto index = parse_exp();
             consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
-            auto place = std::make_unique<ArrayAccess>(std::move(left), std::move(index_exp));
-            left = std::make_unique<Val>(std::move(place));
+            // Create a Place from the current expression
+            auto place = std::make_unique<ArrayAccess>(std::move(exp), std::move(index));
+            // Wrap the new Place in a Val to continue the expression chain
+            exp = std::make_unique<Val>(std::move(place));
         } else if (check("Dot")) {
-            consume("Dot", "unexpected token at token " + std::to_string(peek().index));
+            advance();
             if (check("Id")) {
-                Token id_token = advance();
-                auto place = std::make_unique<FieldAccess>(std::move(left), id_token.value);
-                left = std::make_unique<Val>(std::move(place));
+                Token field_token = advance();
+                auto place = std::make_unique<FieldAccess>(std::move(exp), field_token.value);
+                exp = std::make_unique<Val>(std::move(place));
             } else if (check("Star")) {
                 advance();
-                auto place = std::make_unique<Deref>(std::move(left));
-                left = std::make_unique<Val>(std::move(place));
+                auto place = std::make_unique<Deref>(std::move(exp));
+                exp = std::make_unique<Val>(std::move(place));
             } else {
                 error("unexpected token at token " + std::to_string(peek().index));
             }
         } else if (check("OpenParen")) {
-            consume("OpenParen", "unexpected token at token " + std::to_string(peek().index));
-            // Parse LIST(exp) for function call arguments
+            advance();
             auto args = std::vector<std::unique_ptr<Exp>>();
-            if (!check("CloseParen")) { // skip list if no params
+            if (!check("CloseParen")) {
                 do {
                     args.push_back(parse_exp());
-                } while (check("Comma") && (advance(), true)); // Consume comma and continue
+                } while (check("Comma") && (advance(), true));
             }
             consume("CloseParen", "unexpected token at token " + std::to_string(peek().index));
-            auto fc = std::make_unique<FunCall>(std::move(left), std::move(args));
-            left = std::make_unique<CallExp>(std::move(fc));
-        }
-        else {
-            error("unexpected token at token " + std::to_string(peek().index));
+            auto fc = std::make_unique<FunCall>(std::move(exp), std::move(args));
+            exp = std::make_unique<CallExp>(std::move(fc));
+        } else {
+            // No more call_or_access operators, break the loop.
+            break;
         }
     }
-    return left;
+    return exp;
 }
 
 // exp7 ::= id

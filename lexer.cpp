@@ -238,43 +238,91 @@ const char* numeric_end(const char* first, const char* last) {
 /** *
  * Skip whitespace and comments
  */
-std::pair<const char*, std::optional<Token>> skip_whitespace_and_comments(const char* first, const char* last) {
+// std::pair<const char*, std::optional<Token>> skip_whitespace_and_comments(const char* first, const char* last) {
+//     const char* it = first;
+//     while (true) {
+//         const char* start_loop = it;
+//         while (it != last && isspace(*it)) {
+//             ++it;
+//         }
+
+//         if (it + 1 < last && *it == '/' && *(it + 1) == '/') {
+//             // Single-line c++-comment
+//             it += 2;
+//             while (it != last && *it != '\n') {
+//                 ++it;
+//             }
+//             continue; // Continue to skip more whitespace/comments
+//         } else if (it + 1 < last && *it == '/' && *(it + 1) == '*') {
+//             // Multi-line comment
+//             const char* start_comment = it;
+//             it += 2;
+//             while (it + 1 < last && !(*it == '*' && *(it + 1) == '/')) {
+//                 ++it;
+//             }
+//             if (it + 1 < last) {
+//                 it += 2; // found the closing */
+//             } else {
+//                 Token err_tok = Token{TokenType::Error, start_comment, last}; // Unterminated comment
+//                 return {last, err_tok};
+//             }
+//             continue; // Continue to skip more whitespace/comments
+//         } else {
+//             break; // No more whitespace or comments
+//         }
+
+//         if (it == start_loop) {
+//             break; // No progress made, exit loop
+//         }
+//     }
+//     return {it, std::nullopt};
+// }
+
+std::pair<const char*, std::optional<Token>>
+skip_whitespace_and_comments(const char* first, const char* last) {
     const char* it = first;
-    while (true) {
-        const char* start_loop = it;
-        while (it != last && isspace(*it)) {
+
+    for (;;) {
+        // 1) whitespace
+        while (it != last && std::isspace(static_cast<unsigned char>(*it))) {
             ++it;
         }
 
-        if (it + 1 < last && *it == '/' && *(it + 1) == '/') {
-            // Single-line c++-comment
-            it += 2;
-            while (it != last && *it != '\n') {
+        // 2) C++-style // comment  -> consume until newline OR EOF
+        if (it + 1 < last && it[0] == '/' && it[1] == '/') {
+            it += 2;                           // skip //
+            while (it != last && *it != '\n')  // eat until newline
                 ++it;
-            }
-            continue; // Continue to skip more whitespace/comments
-        } else if (it + 1 < last && *it == '/' && *(it + 1) == '*') {
-            // Multi-line comment
-            const char* start_comment = it;
-            it += 2;
-            while (it + 1 < last && !(*it == '*' && *(it + 1) == '/')) {
+            if (it != last && *it == '\n')     // eat the newline itself
                 ++it;
-            }
-            if (it + 1 < last) {
-                it += 2; // found the closing */
-            } else {
-                Token err_tok = Token{TokenType::Error, start_comment, last}; // Unterminated comment
-                return {last, err_tok};
-            }
-            continue; // Continue to skip more whitespace/comments
-        } else {
-            break; // No more whitespace or comments
+            continue;                          // loop to skip more ws/comments
         }
 
-        if (it == start_loop) {
-            break; // No progress made, exit loop
+        // 3) C-style /* ... */ comment  -> error if unterminated
+        if (it + 1 < last && it[0] == '/' && it[1] == '*') {
+            const char* start_comment = it;    // for Error token if needed
+            it += 2;
+            bool closed = false;
+            while (it + 1 < last) {
+                if (it[0] == '*' && it[1] == '/') {
+                    it += 2;
+                    closed = true;
+                    break;
+                }
+                ++it;
+            }
+            if (!closed) {
+                // Unterminated comment is a lexer error: Error("/*...<EOF>")
+                Token err_tok{TokenType::Error, start_comment, last};
+                return {last, err_tok};
+            }
+            continue;                          // there may be more ws/comments
         }
+
+        // nothing more to skip
+        break;
     }
+
     return {it, std::nullopt};
 }
 

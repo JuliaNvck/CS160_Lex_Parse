@@ -1,1 +1,1 @@
-z = (x + y) > 5 ? st.fld1 : foo(x); ^% ?
+Fn Id(main) OpenParen CloseParen Arrow Int OpenBrace Let Id(x) Colon Int Semicolon If Not Id(x) Equal Num(0) OpenBrace Return Dash Num(5) Plus Num(2) Semicolon CloseBrace Return Num(0) Semicolon CloseBrace
