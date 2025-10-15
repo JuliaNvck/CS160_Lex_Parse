@@ -48,14 +48,15 @@ std::unique_ptr<FunctionDef> Parser::parse_function_def() {
     consume("OpenBrace", "unexpected token at token " + std::to_string(peek().index));
 
     // Parse local `let` declarations
+    // let ::= `let` LIST(decl) `;`
     while (check("Let")) {
         consume("Let", "unexpected token at token " + std::to_string(peek().index));
-        if (!check("CloseParen")) {
+        if (!check("Semicolon")) { // skip list if no locals
             do {
                 func->locals.push_back(parse_decl());
             } while (check("Comma") && (advance(), true)); // Consume comma and continue
         }
-        consume("CloseParen", "unexpected token at token " + std::to_string(peek().index));
+        consume("Semicolon", "unexpected token at token " + std::to_string(peek().index));
     }
 
     // Parse statements in the body
@@ -65,6 +66,14 @@ std::unique_ptr<FunctionDef> Parser::parse_function_def() {
 
     consume("CloseBrace", "unexpected token at token " + std::to_string(peek().index));
     return func;
+}
+
+// decl ::= id `:` type
+std::unique_ptr<Decl> Parser::parse_decl() {
+    Token name = consume("Id", "unexpected token at token " + std::to_string(peek().index));
+    consume("Colon", "unexpected token at token " + std::to_string(peek().index));
+    auto type = parse_type();
+    return std::make_unique<Decl>(name.value, std::move(type));
 }
 
 // stmt ::= exp (`=` exp)? `;` | `if`... | `while`... | `break`... | `continue`... | `return`...
@@ -108,11 +117,50 @@ std::unique_ptr<Stmt> Parser::parse_stmt() {
         } else {
             error("standalone expressions must be function calls, starting at token " + std::to_string(start_token_index));
         }
-        // Unreachable: error(...) throws
-        return nullptr;
     }
+    // Unreachable: error(...) throws
+        return nullptr;
 }
 
+// `if` exp block (`else` block)?
+std::unique_ptr<Stmt> Parser::parse_if_stmt() {
+    consume("If", "unexpected token at token " + std::to_string(peek().index));
+    auto guard = parse_exp();
+    std::vector<std::unique_ptr<Stmt>> tt = parse_block();
+    std::vector<std::unique_ptr<Stmt>> ff;
+    if (check("Else")) {
+        advance(); // consume 'else'
+    ff = parse_block();
+    }
+    return std::make_unique<If>(std::move(guard), std::move(tt), std::move(ff));
+}
+
+// block ::= `{` stmt⋆ `}`
+std::vector<std::unique_ptr<Stmt>> Parser::parse_block() {
+    consume("OpenBrace", "unexpected token at token " + std::to_string(peek().index));
+    std::vector<std::unique_ptr<Stmt>> stmts;
+    while (!check("CloseBrace") && !is_at_end()) {
+        stmts.push_back(parse_stmt());
+    }
+    consume("CloseBrace", "unexpected token at token " + std::to_string(peek().index));
+    return stmts;
+}
+
+// `while` exp block
+std::unique_ptr<Stmt> Parser::parse_while_stmt() {
+    consume("While", "unexpected token at token " + std::to_string(peek().index));
+    auto guard = parse_exp();
+    auto body = parse_block();
+    return std::make_unique<While>(std::move(guard), std::move(body));
+}
+
+// `return` exp `;`
+std::unique_ptr<Stmt> Parser::parse_return_stmt() {
+    consume("Return", "unexpected token at token " + std::to_string(peek().index));
+    auto exp = parse_exp();
+    consume("Semicolon", "unexpected token at token " + std::to_string(peek().index));
+    return std::make_unique<Return>(std::move(exp));
+}
 
 // --- Expression Parsing ---
 // exp  ::= exp1 (`?` exp `:` exp1)⋆
@@ -318,6 +366,49 @@ std::unique_ptr<Exp> Parser::parse_exp7() {
     return nullptr; // Unreachable
 }
 
+// type ::= `int`         # integer type
+    //    | id            # struct type
+    //    | `&` type      # pointer type
+    //    | `[` type `]`  # array type
+    //    | funtype       # function type
+std::unique_ptr<Type> Parser::parse_type() {
+    if (check("Int")) {
+        advance();
+        return std::make_unique<IntType>();
+    }
+    if (check("Id")) {
+        Token id_token = advance();
+        return std::make_unique<StructType>(id_token.value);
+    }
+    if (check("Ampersand")) {
+        advance();
+        auto inner_type = parse_type();
+        return std::make_unique<PtrType>(std::move(inner_type));
+    }
+    if (check("OpenBracket")) {
+        advance();
+        auto inner_type = parse_type();
+        consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
+        return std::make_unique<ArrayType>(std::move(inner_type));
+    }
+    return parse_funtype(); // Fallback to function type
+}
+
+// funtype ::= `(` LIST(type) `)` `->` type
+std::unique_ptr<Type> Parser::parse_funtype() {
+    consume("OpenParen", "unexpected token at token " + std::to_string(peek().index));
+    std::vector<std::unique_ptr<Type>> param_types;
+    if (!check("CloseParen")) { // skip list if no params
+        do {
+            param_types.push_back(parse_type());
+        } while (check("Comma") && (advance(), true)); // Consume comma and continue
+    }
+    consume("CloseParen", "unexpected token at token " + std::to_string(peek().index));
+    consume("Arrow", "unexpected token at token " + std::to_string(peek().index));
+    auto return_type = parse_type();
+    return std::make_unique<FnType>(std::move(param_types), std::move(return_type));
+}
+
 // `struct` id `{` LIST(decl) `}`
 std::unique_ptr<StructDef> Parser::parse_struct_def() {
     consume("Struct", "unexpected token at token " + std::to_string(peek().index));
@@ -354,6 +445,9 @@ bool Parser::is_at_end() const {
 }
 
 const Token& Parser::peek() const {
+    if (is_at_end()) {
+        error("unexpected end of token stream");
+    }
     return m_tokens.at(m_current_pos);
 }
 
@@ -367,7 +461,10 @@ Token Parser::advance() {
 }
 
 Token Parser::consume(const std::string& expected_type, const std::string& error_message) {
-    if (is_at_end() || peek().type != expected_type) {
+    if (is_at_end()) {
+        error("unexpected end of token stream");
+    }
+    if (peek().type != expected_type) {
         error(error_message);
     }
     return advance();
@@ -392,7 +489,7 @@ bool Parser::check_any(const std::vector<std::string>& types) const {
 // - "parse error: left-hand side of assignment must be a place, starting at token <index>"
 // - "parse error: standalone expressions must be function calls, starting at token <index>"
 // - "parse error: invalid i64 number <string> at token <index>"
-void Parser::error(const std::string& message) {
+void Parser::error(const std::string& message) const {
     std::string full_message = "parse error: " + message;
     throw std::runtime_error(full_message);
 }

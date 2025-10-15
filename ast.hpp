@@ -10,6 +10,9 @@
 struct Type;
 struct Stmt;
 struct Exp;
+struct Place;
+struct FunCall;
+struct Decl;
 
 enum class UnaryOp { Neg, Not };
 enum class BinaryOp { Add, Sub, Mul, Div, And, Or, Eq, NotEq, Lt, Lte, Gt, Gte };
@@ -98,6 +101,34 @@ struct ArrayType : public Type {
 struct NilType : public Type {
     void print(std::ostream& os) const override {
         os << "Nil";
+    }
+};
+
+// Decl
+struct Decl : public Node {
+    std::string name;
+    std::unique_ptr<Type> type;
+
+    Decl(std::string n, std::unique_ptr<Type> t) : name(std::move(n)), type(std::move(t)) {}
+
+    void print(std::ostream& os) const override {
+        os << "Decl { name: \"" << name << "\", type: ";
+        type->print(os);
+        os << " }";
+    }
+};
+
+// Place base struct and Id (Id doesn't use Exp)
+struct Place : public Node {
+    // Base class for memory locations
+};
+
+struct Id : public Place {
+    std::string name;
+    explicit Id(std::string n) : name(std::move(n)) {}
+
+    void print(std::ostream& os) const override {
+        os << "Id(\"" << name << "\")";
     }
 };
 
@@ -239,56 +270,7 @@ struct NewArray : public Exp {
     }
 };
 
-struct CallExp : public Exp {
-    std::unique_ptr<FunCall> fun_call;
-    explicit CallExp(std::unique_ptr<FunCall> fc) : fun_call(std::move(fc)) {}
-
-    void print(std::ostream& os) const override {
-        os << "Call(";
-        fun_call->print(os);
-        os << ")";
-    }
-};
-
-struct FunCall: Node {
-    std::unique_ptr<Exp> callee;
-    std::vector<std::unique_ptr<Exp>> args;
-
-    FunCall(std::unique_ptr<Exp> c, std::vector<std::unique_ptr<Exp>> a) 
-    : callee(std::move(c)), args(std::move(a)) {}
-
-    void print(std::ostream& os) const override {
-        os << "FunCall { callee: ";
-        callee->print(os);
-        os << ", args: [";
-        for (size_t i = 0; i < args.size(); ++i) {
-            args[i]->print(os);
-            if (i < args.size() - 1) os << ", ";
-        }
-        os << "] }";
-    }
-};
-
-
-// Place
-// | Id(String)
-// | Deref(Exp)
-// | ArrayAccess { array:Exp, index:Exp }
-// | FieldAccess { ptr:Exp, field:String }
-
-struct Place : public Node {
-    // Base class for memory locations
-};
-
-struct Id : public Place {
-    std::string name;
-    explicit Id(std::string n) : name(std::move(n)) {}
-
-    void print(std::ostream& os) const override {
-        os << "Id(\"" << name << "\")";
-    }
-};
-
+// Place derivatives that use Exp
 struct Deref : public Place {
     std::unique_ptr<Exp> exp;
     explicit Deref(std::unique_ptr<Exp> e) : exp(std::move(e)) {}
@@ -327,6 +309,37 @@ struct FieldAccess : public Place {
         os << "FieldAccess { ptr: ";
         ptr->print(os);
         os << ", field: \"" << field << "\" }";
+    }
+};
+
+// FunCall
+struct FunCall: Node {
+    std::unique_ptr<Exp> callee;
+    std::vector<std::unique_ptr<Exp>> args;
+
+    FunCall(std::unique_ptr<Exp> c, std::vector<std::unique_ptr<Exp>> a) 
+    : callee(std::move(c)), args(std::move(a)) {}
+
+    void print(std::ostream& os) const override {
+        os << "FunCall { callee: ";
+        callee->print(os);
+        os << ", args: [";
+        for (size_t i = 0; i < args.size(); ++i) {
+            args[i]->print(os);
+            if (i < args.size() - 1) os << ", ";
+        }
+        os << "] }";
+    }
+};
+
+struct CallExp : public Exp {
+    std::unique_ptr<FunCall> fun_call;
+    explicit CallExp(std::unique_ptr<FunCall> fc) : fun_call(std::move(fc)) {}
+
+    void print(std::ostream& os) const override {
+        os << "Call(";
+        fun_call->print(os);
+        os << ")";
     }
 };
 
@@ -446,27 +459,21 @@ struct FunctionDef : public Node {
     std::vector<std::unique_ptr<Decl>> locals;
     std::vector<std::unique_ptr<Stmt>> stmts;
 
-    FunctionDef(std::string n, std::vector<std::unique_ptr<Decl>> p, std::unique_ptr<Type> rt,
-                std::vector<std::unique_ptr<Decl>> l, std::vector<std::unique_ptr<Stmt>> s)
-        : name(std::move(n)), params(std::move(p)), rettype(std::move(rt)),
-          locals(std::move(l)), stmts(std::move(s)) {}
-
-
     void print(std::ostream& os) const override {
         os << "Function { name: \"" << name << "\", ";
-        os << "params: [";
+        os << "prms: [";
         for (size_t i = 0; i < params.size(); ++i) {
             params[i]->print(os);
             if (i < params.size() - 1) os << ", ";
         }
-        os << "], rettype: ";
+        os << "], rettyp: ";
         rettype->print(os);
-        os << ", locals: [";
-        for (size_t i = 0; i < locals.size(); ++i) {
-            locals[i]->print(os);
-            if (i < locals.size() - 1) os << ", ";
+        os << ", locals: {";
+        for (const auto& l : locals) {
+            l->print(os);
+            os << ", ";
         }
-        os << "], ";
+        os << "}, ";
         os << "stmts: [";
         for (size_t i = 0; i < stmts.size(); ++i) {
             stmts[i]->print(os);
@@ -476,25 +483,9 @@ struct FunctionDef : public Node {
     }
 };
 
-struct Decl : public Node {
-    std::string name;
-    std::unique_ptr<Type> type;
-
-    Decl(std::string n, std::unique_ptr<Type> t) : name(std::move(n)), type(std::move(t)) {}
-
-    void print(std::ostream& os) const override {
-        os << "Decl { name: \"" << name << "\", type: ";
-        type->print(os);
-        os << " }";
-    }
-};
-
 struct StructDef : public Node {
     std::string name;
     std::vector<std::unique_ptr<Decl>> fields;
-
-    StructDef(std::string n, std::vector<std::unique_ptr<Decl>> f) 
-    : name(std::move(n)), fields(std::move(f)) {}
 
     void print(std::ostream& os) const override {
         os << "Struct { name: \"" << name << "\", fields: [";
@@ -510,10 +501,6 @@ struct Program : public Node {
     std::vector<std::unique_ptr<StructDef>> structs;
     std::vector<std::unique_ptr<Decl>> externs;
     std::vector<std::unique_ptr<FunctionDef>> functions;
-
-    Program(std::vector<std::unique_ptr<StructDef>> s, std::vector<std::unique_ptr<Decl>> e,
-            std::vector<std::unique_ptr<FunctionDef>> f)
-        : structs(std::move(s)), externs(std::move(e)), functions(std::move(f)) {}
 
     void print(std::ostream& os) const override {
         os << "Program { structs: {";

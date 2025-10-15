@@ -43,7 +43,7 @@ private:
     // Checks if the current token is one of several types.
     bool check_any(const std::vector<std::string>& types) const;
     // Formats and throws a runtime error for the main function to catch.
-    void error(const std::string& message);
+    void error(const std::string& message) const;
 
     // --- Parsing Methods for Each Grammar Rule ---
 
@@ -59,7 +59,7 @@ private:
     std::unique_ptr<Stmt> parse_if_stmt();
     std::unique_ptr<Stmt> parse_while_stmt();
     std::unique_ptr<Stmt> parse_return_stmt();
-    std::unique_ptr<std::vector<std::unique_ptr<Stmt>>> parse_block();
+    std::vector<std::unique_ptr<Stmt>> parse_block();
 
     // Type Parsing
     std::unique_ptr<Type> parse_type();
