@@ -91,26 +91,26 @@ Token munch_token(const char* first, const char* last) {
     // Try to munch operators and punctuation
     // Check longest operators first for max munch
     if (last - first >= 2) {
-        if (strcmp(first, "!=") == 0) {
+        if (substr_eq(first, first + 2, "!=")) {
             return Token{TokenType::NotEq, first, first + 2};
         }
-        if (strcmp(first, "<=") == 0) {
+        if (substr_eq(first, first + 2, "<=")) {
             return Token{TokenType::Lte, first, first + 2};
         }
-        if (strcmp(first, ">=") == 0) {
+        if (substr_eq(first, first + 2, ">=")) {
             return Token{TokenType::Gte, first, first + 2};
         }
-        if (strcmp(first, "->") == 0) {
+        if (substr_eq(first, first + 2, "->")) {
             return Token{TokenType::Arrow, first, first + 2};
         }
-        if (strcmp(first, "==") == 0) {
+        if (substr_eq(first, first + 2, "==")) {
             return Token{TokenType::Equal, first, first + 2};
         }
         // C-style comments
-        if (strcmp(first, "/*") == 0) {
-            // not skipped by skip_whitespace_and_comments so unterminated c-style comment is an error
-            return Token{TokenType::Error, first, last};
-        }
+        // if (substr_eq(first, first + 2, "/*")) {
+        //     // not skipped by skip_whitespace_and_comments so unterminated c-style comment is an error
+        //     return Token{TokenType::Error, first, last};
+        // }
     }
     switch(*first) {
         case ':': return {TokenType::Colon, first, first + 1};
@@ -149,7 +149,7 @@ const char* error_end(const char* first, const char* last) {
     const char* err_end = first + 1;
     for(; err_end != last; ++err_end) {
         // find next space or possible start of token
-        if(' ' == *err_end || isalpha(*err_end) || '=' == *err_end || '+' == *err_end) {
+        if(' ' == *err_end || isalpha(*err_end) || '=' == *err_end || '+' == *err_end || ';' == *err_end) {
             break;
         }
     }

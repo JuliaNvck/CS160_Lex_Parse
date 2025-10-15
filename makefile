@@ -1,10 +1,7 @@
-# =============================================================================
-# Makefile for Cflat Lexer and Parser (Revised)
-# =============================================================================
+# Makefile for Cflat Lexer and Parser
 
-# 1. Configuration
+# Configuration
 CXX = g++
-# ADDED -fsanitize=address for memory safety!
 CXXFLAGS = -std=c++17 -Wall -g -fsanitize=address
 EXECUTABLES = lex parse
 
@@ -12,32 +9,28 @@ EXECUTABLES = lex parse
 LEX_OBJS = lex_main.o lexer.o
 PARSE_OBJS = parse_main.o parser.o
 
-# 2. Default Target
+# Default Target
 .PHONY: all
 all: $(EXECUTABLES)
 
-# 3. Linking Rules (Simplified using automatic variables)
+# Linking Rules
 lex: $(LEX_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# REMOVED lexer.o dependency
 parse: $(PARSE_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# 4. Compilation Rule (Replaced with a single pattern rule)
-# This generic rule tells make how to build any .o from a .cpp
+# Compilation Rule
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# 5. Dependencies
-# Explicitly list header dependencies here.
-# If a header changes, the corresponding .o file will be rebuilt.
+# Dependencies
 lex_main.o: lexer.hpp
 parse_main.o: parser.hpp ast.hpp
 parser.o: parser.hpp ast.hpp
 lexer.o: lexer.hpp
 
-# 6. Cleanup Rule
+# Cleanup Rule
 .PHONY: clean
 clean:
 	rm -f $(EXECUTABLES) *.o

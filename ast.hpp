@@ -200,12 +200,12 @@ struct UnOp : public Exp {
     UnOp(UnaryOp o, std::unique_ptr<Exp> e) : op(o), exp(std::move(e)) {}
 
     void print(std::ostream& os) const override {
-        os << "UnOp(op: ";
+        os << "UnOp(";
         switch (op) {
             case UnaryOp::Neg: os << "Neg"; break;
             case UnaryOp::Not: os << "Not"; break;
         }
-        os << ", exp: ";
+        os << ", ";
         exp->print(os);
         os << ")";
     }
@@ -471,7 +471,7 @@ struct FunctionDef : public Node {
         os << ", locals: {";
         for (const auto& l : locals) {
             l->print(os);
-            os << ", ";
+            if (l != locals.back()) os << ", ";
         }
         os << "}, ";
         os << "stmts: [";

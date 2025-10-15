@@ -8,7 +8,14 @@
 std::string token_type_to_string(const Token& token) {
     std::string lexeme(token.first, token.last - token.first);
     switch (token.token_type) {
-        case TokenType::Error: return "Error(" + lexeme + ")";
+        // case TokenType::Error: return "Error(" + lexeme + ")";
+        case TokenType::Error: {
+            // Check if lexeme ends with newline, if so add extra newline before closing paren
+            if (!lexeme.empty() && lexeme.back() == '\n') {
+                return "Error(" + lexeme + "\n)";
+            }
+            return "Error(" + lexeme + ")";
+        }
         case TokenType::Num: return "Num(" + lexeme + ")";
         case TokenType::Id: return "Id(" + lexeme + ")";
 
@@ -90,6 +97,7 @@ int main(int argc, char** argv) {
         }
     }
     std::cout << std::endl;
+    // std::cout << std::endl;
 
     return 0;
 }

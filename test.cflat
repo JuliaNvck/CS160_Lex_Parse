@@ -1,1 +1,20 @@
-Fn Id(main) OpenParen CloseParen Arrow Int OpenBrace Return Num(42) Semicolon CloseBrace
+// Cflat lexer test file
+// This line is a C++ style comment and should be skipped.
+
+fn calculate(val1: int, val2: int) -> int {
+    /*
+     * This is a multi-line, C-style comment.
+     * It should also be skipped by the lexer.
+    */
+    let my_result_1 = (val1 * 100) / val2;
+
+    if my_result_1 >= 50 and my_result_1 != 99 {
+        return my_result_1;
+    } else {
+        let check = nil;
+    }
+    
+    // Test some invalid characters and an unclosed comment
+    let oops = 123 + &^%@; // Should produce an error token for &^%@
+    
+    return 0; /* This is an unclosed comment

@@ -19,7 +19,7 @@ std::unique_ptr<Program> Parser::parse_program() {
         } else if (check("Fn")) {
             program->functions.push_back(parse_function_def());
         } else {
-            error("unexpected token '" + peek().type + "', expected struct, extern, or function definition.");
+            error("unexpected token at token " + std::to_string(peek().index));
         }
     }
     return program;
