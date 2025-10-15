@@ -1,0 +1,1 @@
+Fn Id(main) OpenParen CloseParen Arrow Int OpenBrace Let Id(a) Colon Int Semicolon If Not Id(x) Equal Num(0) OpenBrace Return Dash Num(5) Plus Num(2) Semicolon CloseBrace Return Num(0) Semicolon CloseBrace

@@ -1,0 +1,3 @@
+real = "Program { structs: {}, externs: {}, functions: {Function { name: 'main', prms: [], rettyp: Int, locals: {Decl { name: 'x', typ: Int }}, stmts: [If { guard: BinOp { op: Eq, left: UnOp(Not, Val(Id('x'))), right: Num(0) }, tt: [Return(BinOp { op: Add, left: UnOp(Neg, Num(5)), right: Num(2) })], ff: [] }, Return(Num(0))] }}}"
+mine = "Program { structs: {}, externs: {}, functions: {Function { name: 'main', prms: [], rettyp: Int, locals: {Decl { name: 'x', type: Int }}, stmts: [If { guard: BinOp { op: Eq, left: UnOp(Not, Val(Id('x'))), right: Num(0) }, tt: [Return(BinOp { op: Add, left: UnOp(Neg, Num(5)), right: Num(2) })], ff: [] }, Return(Num(0))] }}}"
+print(real == mine)
