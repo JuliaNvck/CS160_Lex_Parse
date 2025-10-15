@@ -74,5 +74,4 @@ private:
     std::unique_ptr<Exp> parse_exp5();       // Precedence: Unary operators (-, not)
     std::unique_ptr<Exp> parse_exp6();       // Precedence: Call, Array/Struct Access
     std::unique_ptr<Exp> parse_exp7();       // Precedence: Primary (literals, id, grouping)
-    std::unique_ptr<FunCall> parse_funcall();
 };
