@@ -93,7 +93,7 @@ Token munch_token(const char* first, const char* last) {
 
     // Try to munch an identifier or keyword
 
-    if(isalpha(*first)) {
+    if(std::isalpha(static_cast<unsigned char>(*first))) {
         const char* id_end = identifier_end(first, last);
         // Prioritize keywords
         if(substr_eq(first, id_end, "int")) return Token{TokenType::Int, first, id_end};
@@ -117,7 +117,7 @@ Token munch_token(const char* first, const char* last) {
     }
 
     // Try to munch a number
-    if(isdigit(*first)) {
+    if(std::isdigit(static_cast<unsigned char>(*first))) {
         const char* num_end = numeric_end(first, last);
         return Token{TokenType::Num, first, num_end};
     }
@@ -209,11 +209,11 @@ static const char* error_end(const char* first, const char* last) {
  * Return one-past-the-end of an identifier sequence of characters: [a-zA-Z]([a-zA-Z0-9_])⋆
  */
 const char* identifier_end(const char* first, const char* last) {
-    if (first == last || !(isalpha(*first))) {
+    if (first == last || !(std::isalpha(static_cast<unsigned char>(*first)))) {
         return first; // not a valid identifier start
     }
     for(const char* it = first; it != last; ++it) {
-        if(!(isalnum(*it) || '_' == *it)) {
+        if(!(std::isalnum(static_cast<unsigned char>(*it)) || '_' == *it)) {
             return it;
         }
     }
@@ -224,11 +224,11 @@ const char* identifier_end(const char* first, const char* last) {
  * Return one-past-the-end of a numeric sequence of characters: [0-9]+: [0-9]([0-9])⋆
  */
 const char* numeric_end(const char* first, const char* last) {
-    if (first == last || !isdigit(*first)) {
+    if (first == last || !std::isdigit(static_cast<unsigned char>(*first))) {
         return first; // not a valid numeric start
     }
     for(const char* it = first; it != last; ++it) {
-        if(!(isdigit(*it))) {
+        if(!(std::isdigit(static_cast<unsigned char>(*it)))) {
             return it;
         }
     }
