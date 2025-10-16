@@ -365,11 +365,11 @@ struct Assign : public Stmt {
     : place(std::move(p)), exp(std::move(e)) {}
 
     void print(std::ostream& os) const override {
-        os << "Assign { place: ";
+        os << "Assign(";
         place->print(os);
-        os << ", exp: ";
+        os << ", ";
         exp->print(os);
-        os << " }";
+        os << ")";
     }
 };
 
@@ -419,7 +419,7 @@ struct While : public Stmt {
     void print(std::ostream& os) const override {
         os << "While(";
         guard->print(os);
-        os << ", body: [";
+        os << ", [";
         for (size_t i = 0; i < body.size(); ++i) {
             body[i]->print(os);
             if (i < body.size() - 1) os << ", ";
