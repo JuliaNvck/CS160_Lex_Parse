@@ -184,30 +184,30 @@ std::unique_ptr<Stmt> Parser::parse_return_stmt() {
 //        | `(` exp `)`
 
 // exp  ::= exp1 (`?` exp `:` exp1)⋆
-// std::unique_ptr<Exp> Parser::parse_exp() {
-//     auto left = parse_exp1(); // Parse higher-precedence expression
-
-//     while (check("QuestionMark")) { // TODO no check parens??
-//         advance(); // consume '?'
-//         auto true_exp = parse_exp();
-//         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
-//         auto false_exp = parse_exp1();
-//         left = std::make_unique<Select>(std::move(left), std::move(true_exp), std::move(false_exp));
-//     }
-//     return left;
-// }
 std::unique_ptr<Exp> Parser::parse_exp() {
-    auto condition = parse_exp1(); // Parse the condition
-    if (check("QuestionMark")) {
+    auto left = parse_exp1(); // Parse higher-precedence expression
+
+    while (check("QuestionMark")) { // TODO no check parens??
         advance(); // consume '?'
-        auto true_exp = parse_exp(); // Recursively parse the true-branch expression
+        auto true_exp = parse_exp();
         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
-        auto false_exp = parse_exp(); // Recursively parse the false-branch expression
-        // Note: The false branch should also be parse_exp() to handle nesting
-        return std::make_unique<Select>(std::move(condition), std::move(true_exp), std::move(false_exp));
+        auto false_exp = parse_exp1();
+        left = std::make_unique<Select>(std::move(left), std::move(true_exp), std::move(false_exp));
     }
-    return condition;
+    return left;
 }
+// std::unique_ptr<Exp> Parser::parse_exp() {
+//     auto condition = parse_exp1(); // Parse the condition
+//     if (check("QuestionMark")) {
+//         advance(); // consume '?'
+//         auto true_exp = parse_exp(); // Recursively parse the true-branch expression
+//         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
+//         auto false_exp = parse_exp(); // Recursively parse the false-branch expression
+//         // Note: The false branch should also be parse_exp() to handle nesting
+//         return std::make_unique<Select>(std::move(condition), std::move(true_exp), std::move(false_exp));
+//     }
+//     return condition;
+// }
 
 // exp1 ::= exp2 ([`and`,`or`] exp2)⋆
 std::unique_ptr<Exp> Parser::parse_exp1() {
