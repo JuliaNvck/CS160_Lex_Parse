@@ -417,14 +417,14 @@ struct While : public Stmt {
     : guard(std::move(g)), body(std::move(b)) {}
 
     void print(std::ostream& os) const override {
-        os << "While { guard: ";
+        os << "While(";
         guard->print(os);
         os << ", body: [";
         for (size_t i = 0; i < body.size(); ++i) {
             body[i]->print(os);
             if (i < body.size() - 1) os << ", ";
         }
-        os << "] }";
+        os << "])";
     }
 };
 
