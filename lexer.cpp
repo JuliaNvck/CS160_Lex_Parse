@@ -290,10 +290,16 @@ skip_whitespace_and_comments(const char* first, const char* last) {
 
         // 2) C++-style // comment  -> consume until newline OR EOF
         if (it + 1 < last && it[0] == '/' && it[1] == '/') {
+            const char* start_comment = it;    // for Error token if needed
             it += 2;                           // skip //
-            while (it != last && *it != '\n')  // eat until newline
+            while (it != last && *it != '\n') {
                 ++it;
-            if (it != last && *it == '\n')     // eat the newline itself
+            } // eat until newline
+            if (it == last) {
+                Token err_tok{TokenType::Error, start_comment, last};
+                return {last, err_tok};
+            }
+            else if (it != last && *it == '\n')     // eat the newline itself
                 ++it;
             continue;                          // loop to skip more ws/comments
         }

@@ -112,7 +112,7 @@ struct Decl : public Node {
     Decl(std::string n, std::unique_ptr<Type> t) : name(std::move(n)), type(std::move(t)) {}
 
     void print(std::ostream& os) const override {
-        os << "Decl { name: \"" << name << "\", type: ";
+        os << "Decl { name: \"" << name << "\", typ: ";
         type->print(os);
         os << " }";
     }
@@ -262,7 +262,7 @@ struct NewArray : public Exp {
     : type(std::move(t)), size(std::move(s)) {}
 
     void print(std::ostream& os) const override {
-        os << "NewArray { type: ";
+        os << "NewArray { typ: ";
         type->print(os);
         os << ", size: ";
         size->print(os);

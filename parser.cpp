@@ -437,22 +437,29 @@ std::unique_ptr<Type> Parser::parse_type() {
         advance();
         return std::make_unique<IntType>();
     }
-    if (check("Id")) {
+    else if (check("Id")) {
         Token id_token = advance();
         return std::make_unique<StructType>(id_token.value);
     }
-    if (check("Ampersand")) {
+    else if (check("Ampersand")) {
         advance();
         auto inner_type = parse_type();
         return std::make_unique<PtrType>(std::move(inner_type));
     }
-    if (check("OpenBracket")) {
+    else if (check("OpenBracket")) {
         advance();
         auto inner_type = parse_type();
         consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
         return std::make_unique<ArrayType>(std::move(inner_type));
     }
-    return parse_funtype(); // Fallback to function type
+    else if (check("OpenParen")) { // new
+        return parse_funtype();
+    }
+    else {
+        error("Expected a type.");
+    }
+    return nullptr; // Unreachable
+    // return parse_funtype(); // Fallback to function type
 }
 
 // funtype ::= `(` LIST(type) `)` `->` type
