@@ -196,18 +196,6 @@ std::unique_ptr<Exp> Parser::parse_exp() {
     }
     return left;
 }
-// std::unique_ptr<Exp> Parser::parse_exp() {
-//     auto condition = parse_exp1(); // Parse the condition
-//     if (check("QuestionMark")) {
-//         advance(); // consume '?'
-//         auto true_exp = parse_exp(); // Recursively parse the true-branch expression
-//         consume("Colon", "unexpected token at token " + std::to_string(peek().index));
-//         auto false_exp = parse_exp(); // Recursively parse the false-branch expression
-//         // Note: The false branch should also be parse_exp() to handle nesting
-//         return std::make_unique<Select>(std::move(condition), std::move(true_exp), std::move(false_exp));
-//     }
-//     return condition;
-// }
 
 // exp1 ::= exp2 ([`and`,`or`] exp2)⋆
 std::unique_ptr<Exp> Parser::parse_exp1() {
@@ -295,47 +283,6 @@ std::unique_ptr<Exp> Parser::parse_exp5() {
 // call_or_access ::= `[` exp `]`
                 //  | `.` (id | `*`)
                 //  | `(` LIST(exp) `)`
-// std::unique_ptr<Exp> Parser::parse_exp6() {
-//     auto left = parse_exp7();
-//     while (check_any({"OpenParen", "OpenBracket", "Dot"})) {
-//         if (check("OpenBracket")) {
-//             consume("OpenBracket", "unexpected token at token " + std::to_string(peek().index));
-//             auto index_exp = parse_exp();
-//             consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
-//             auto place = std::make_unique<ArrayAccess>(std::move(left), std::move(index_exp));
-//             left = std::make_unique<Val>(std::move(place));
-//         } else if (check("Dot")) {
-//             consume("Dot", "unexpected token at token " + std::to_string(peek().index));
-//             if (check("Id")) {
-//                 Token id_token = advance();
-//                 auto place = std::make_unique<FieldAccess>(std::move(left), id_token.value);
-//                 left = std::make_unique<Val>(std::move(place));
-//             } else if (check("Star")) {
-//                 advance();
-//                 auto place = std::make_unique<Deref>(std::move(left));
-//                 left = std::make_unique<Val>(std::move(place));
-//             } else {
-//                 error("unexpected token at token " + std::to_string(peek().index));
-//             }
-//         } else if (check("OpenParen")) {
-//             consume("OpenParen", "unexpected token at token " + std::to_string(peek().index));
-//             // Parse LIST(exp) for function call arguments
-//             auto args = std::vector<std::unique_ptr<Exp>>();
-//             if (!check("CloseParen")) { // skip list if no params
-//                 do {
-//                     args.push_back(parse_exp());
-//                 } while (check("Comma") && (advance(), true)); // Consume comma and continue
-//             }
-//             consume("CloseParen", "unexpected token at token " + std::to_string(peek().index));
-//             auto fc = std::make_unique<FunCall>(std::move(left), std::move(args));
-//             left = std::make_unique<CallExp>(std::move(fc));
-//         }
-//         else {
-//             error("unexpected token at token " + std::to_string(peek().index));
-//         }
-//     }
-//     return left;
-// }
 std::unique_ptr<Exp> Parser::parse_exp6() {
     auto exp = parse_exp7(); // Start with a primary expression.
 
@@ -452,13 +399,6 @@ std::unique_ptr<Type> Parser::parse_type() {
         consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
         return std::make_unique<ArrayType>(std::move(inner_type));
     }
-    // else if (check("OpenParen")) { // new
-    //     return parse_funtype();
-    // }
-    // else {
-    //     error("Expected a type.");
-    // }
-    // return nullptr; // Unreachable
     return parse_funtype(); // Fallback to function type
 }
 
@@ -503,8 +443,6 @@ std::unique_ptr<Decl> Parser::parse_extern_def() {
     consume("Semicolon", "unexpected token at token " + std::to_string(peek().index));
     return std::make_unique<Decl>(id_token.value, std::move(funtype));
 }
-// ... and so on for every other parse_... method in the header ...
-
 
 // --- Helper Method Implementations ---
 

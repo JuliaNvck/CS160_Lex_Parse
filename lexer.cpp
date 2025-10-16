@@ -140,11 +140,6 @@ Token munch_token(const char* first, const char* last) {
         if (substr_eq(first, first + 2, "==")) {
             return Token{TokenType::Equal, first, first + 2};
         }
-        // C-style comments
-        // if (substr_eq(first, first + 2, "/*")) {
-        //     // not skipped by skip_whitespace_and_comments so unterminated c-style comment is an error
-        //     return Token{TokenType::Error, first, last};
-        // }
     }
     switch(*first) {
         case ':': return {TokenType::Colon, first, first + 1};
@@ -178,19 +173,6 @@ Token munch_token(const char* first, const char* last) {
  * Look for the next character which is either a space or the beginning of the
  * next (possibly) valid token.
  */
-// const char* error_end(const char* first, const char* last) {
-//     // find the end of the error
-//     const char* err_end = first + 1;
-//     for(; err_end != last; ++err_end) {
-//         // find next space or possible start of token
-//         if(' ' == *err_end || isalpha(*err_end) || '=' == *err_end || '+' == *err_end || ';' == *err_end) {
-//             break;
-//         }
-//     }
-//     return err_end;
-// }
-// Consume a maximal run of non-token-start characters, INCLUDING whitespace,
-// stopping right before the next valid token (or end of input).
 static const char* error_end(const char* first, const char* last) {
     const char* it = first;
     // Always consume at least one char
@@ -238,46 +220,6 @@ const char* numeric_end(const char* first, const char* last) {
 /** *
  * Skip whitespace and comments
  */
-// std::pair<const char*, std::optional<Token>> skip_whitespace_and_comments(const char* first, const char* last) {
-//     const char* it = first;
-//     while (true) {
-//         const char* start_loop = it;
-//         while (it != last && isspace(*it)) {
-//             ++it;
-//         }
-
-//         if (it + 1 < last && *it == '/' && *(it + 1) == '/') {
-//             // Single-line c++-comment
-//             it += 2;
-//             while (it != last && *it != '\n') {
-//                 ++it;
-//             }
-//             continue; // Continue to skip more whitespace/comments
-//         } else if (it + 1 < last && *it == '/' && *(it + 1) == '*') {
-//             // Multi-line comment
-//             const char* start_comment = it;
-//             it += 2;
-//             while (it + 1 < last && !(*it == '*' && *(it + 1) == '/')) {
-//                 ++it;
-//             }
-//             if (it + 1 < last) {
-//                 it += 2; // found the closing */
-//             } else {
-//                 Token err_tok = Token{TokenType::Error, start_comment, last}; // Unterminated comment
-//                 return {last, err_tok};
-//             }
-//             continue; // Continue to skip more whitespace/comments
-//         } else {
-//             break; // No more whitespace or comments
-//         }
-
-//         if (it == start_loop) {
-//             break; // No progress made, exit loop
-//         }
-//     }
-//     return {it, std::nullopt};
-// }
-
 std::pair<const char*, std::optional<Token>>
 skip_whitespace_and_comments(const char* first, const char* last) {
     const char* it = first;
