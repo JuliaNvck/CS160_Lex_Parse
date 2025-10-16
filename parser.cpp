@@ -452,14 +452,14 @@ std::unique_ptr<Type> Parser::parse_type() {
         consume("CloseBracket", "unexpected token at token " + std::to_string(peek().index));
         return std::make_unique<ArrayType>(std::move(inner_type));
     }
-    else if (check("OpenParen")) { // new
-        return parse_funtype();
-    }
-    else {
-        error("Expected a type.");
-    }
-    return nullptr; // Unreachable
-    // return parse_funtype(); // Fallback to function type
+    // else if (check("OpenParen")) { // new
+    //     return parse_funtype();
+    // }
+    // else {
+    //     error("Expected a type.");
+    // }
+    // return nullptr; // Unreachable
+    return parse_funtype(); // Fallback to function type
 }
 
 // funtype ::= `(` LIST(type) `)` `->` type
