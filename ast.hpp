@@ -53,7 +53,7 @@ struct StructType : public Type {
     explicit StructType(std::string n) : name(std::move(n)) {}
 
     void print(std::ostream& os) const override {
-        os << "Struct(" << name << ")";
+        os << "Struct(\"" << name << "\")";
     }
 };
 
@@ -262,11 +262,11 @@ struct NewArray : public Exp {
     : type(std::move(t)), size(std::move(s)) {}
 
     void print(std::ostream& os) const override {
-        os << "NewArray { typ: ";
+        os << "NewArray(";
         type->print(os);
-        os << ", size: ";
+        os << ", ";
         size->print(os);
-        os << " }";
+        os << ")";
     }
 };
 
@@ -292,7 +292,7 @@ struct ArrayAccess : public Place {
     void print(std::ostream& os) const override {
         os << "ArrayAccess { array: ";
         array->print(os);
-        os << ", index: ";
+        os << ", idx: "; // <-- Change "index" to "idx"
         index->print(os);
         os << " }";
     }
@@ -488,12 +488,12 @@ struct StructDef : public Node {
     std::vector<std::unique_ptr<Decl>> fields;
 
     void print(std::ostream& os) const override {
-        os << "Struct { name: \"" << name << "\", fields: [";
+        os << "Struct { name: \"" << name << "\", fields: {";
         for (size_t i = 0; i < fields.size(); ++i) {
             fields[i]->print(os);
             if (i < fields.size() - 1) os << ", ";
         }
-        os << "] }";
+        os << "} }";
     }
 };
 
@@ -506,12 +506,12 @@ struct Program : public Node {
         os << "Program { structs: {";
         for (const auto& s : structs) {
             s->print(os);
-            os << ", ";
+            if (s != structs.back()) os << ", ";
         }
         os << "}, externs: {";
         for (const auto& e : externs) {
             e->print(os);
-            os << ", ";
+            if (e != externs.back()) os << ", ";
         }
         os << "}, functions: {";
         for (size_t i = 0; i < functions.size(); ++i) {
